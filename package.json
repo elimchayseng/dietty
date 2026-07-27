@@ -1,0 +1,14 @@
+{
+  "name": "dietty",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Personal diet + health tracking dashboard, served from a Cloudflare Worker, sourced live from Notion.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

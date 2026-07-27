@@ -1,0 +1,27 @@
+name = "dietty"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+workers_dev = true
+
+# ─── Public (non-secret) config ────────────────────────────────────────────
+# Notion database IDs (from the Food Tracker page). Safe to keep in the repo —
+# they are useless without the NOTION_TOKEN secret and DB sharing.
+[vars]
+DAILY_DB_ID = "b9ced7d6e8fc40f99e09897f4e19c020"   # Ethan Daily Log - Energy & Weight
+FOOD_DB_ID  = "c3a2e3123c9f4ab2ad1610f3e287efc8"   # Food Log
+
+# ─── Profile / program constants (edit here, no code change needed) ─────────
+# These mirror the "Profile" + calibration rule on the Notion Food Tracker page.
+INTAKE_BASE          = "1575"        # dynamic target = INTAKE_BASE + workout calories
+PROTEIN_TARGET_G     = "145"
+DEFICIT_TARGET       = "400"
+RHR_BASELINE         = "51"          # baseline resting HR (bpm), ~49-53
+HRV_BASELINE         = "82"          # baseline sleep HRV (ms)
+HRV_FLOOR            = "65"          # parked below this 3+ days = under-fueling flag
+SLEEP_TARGET_H       = "8"
+CALIB_WINDOW_START   = "2026-07-13"  # calibration evaluation window
+CALIB_WINDOW_END     = "2026-08-03"
+
+# ─── Secrets (DO NOT put here) ──────────────────────────────────────────────
+# Set with:  npx wrangler secret put NOTION_TOKEN
+#            npx wrangler secret put DASHBOARD_PASSWORD
