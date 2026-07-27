@@ -103,6 +103,9 @@ function clientMain() {
 
   let charts = [];
   let DATA = null;
+  let lastLoad = 0;
+  const AUTO_MS = 5 * 60 * 1000; // auto-refresh cadence
+  const STALE_MS = 2 * 60 * 1000; // refetch on tab focus if older than this
 
   // ── helpers ────────────────────────────────────────────────────────────
   const fmtD = (iso) => new Date(iso + "T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"});
@@ -135,6 +138,7 @@ function clientMain() {
       const r = await fetch("/api/data"+(fresh?"?fresh=1":""), {cache:"no-store"});
       if(!r.ok) throw new Error(await r.text());
       DATA = await r.json();
+      lastLoad = Date.now();
       render();
       const g = new Date(DATA.generatedAt);
       $("#generated").textContent = "Updated " + g.toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}) + (DATA.cached?" (cached)":"");
@@ -381,6 +385,13 @@ function clientMain() {
   $("#refresh").onclick = ()=>load(true);
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ()=>{ if(DATA && !document.documentElement.getAttribute("data-theme")) render(); });
 
+  // auto-refresh: on a 5-min timer while the tab is visible, and immediately
+  // when the tab regains focus if the data is more than 2 min stale.
+  setInterval(()=>{ if(!document.hidden) load(false); }, AUTO_MS);
+  document.addEventListener("visibilitychange", ()=>{
+    if(!document.hidden && Date.now()-lastLoad > STALE_MS) load(false);
+  });
+
   load(false);
 }
 
@@ -402,7 +413,7 @@ export function renderPage(cfg) {
     <span class="sub" id="generated"></span>
     <span class="spacer"></span>
     <button class="btn" id="theme">Theme</button>
-    <button class="btn" id="refresh">↻ Refresh</button>
+    <button class="btn" id="refresh" title="Auto-refreshes every 5 min while open; click to force a fresh pull now">↻ Refresh</button>
   </header>
   <div id="status"></div>
 

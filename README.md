@@ -92,10 +92,29 @@ enter your password, and you're in.
 
 ---
 
+## Deploy from GitHub (Cloudflare Workers Builds)
+
+You can have Cloudflare auto-deploy on every `git push`:
+
+1. **Do one manual deploy + set secrets first** (steps 3 & 5 above). This creates
+   the Worker and stores `NOTION_TOKEN` / `DASHBOARD_PASSWORD` — secrets persist on
+   the Worker across all future deploys, so they never live in the repo or CI.
+2. In the **Cloudflare dashboard → Workers & Pages → your `dietty` Worker →
+   Settings → Build**, click **Connect** and pick the GitHub repo.
+3. Build settings: **Deploy command** `npx wrangler deploy` (build command can be
+   left as `npm install`). Root directory `/`.
+4. Now every push to the default branch triggers a fresh `wrangler deploy`. The
+   `[vars]` in `wrangler.toml` deploy automatically; secrets stay as you set them.
+
+> If you'd rather not do a manual deploy first, you can instead add
+> `NOTION_TOKEN` and `DASHBOARD_PASSWORD` as **Secrets** in the Worker's Settings
+> after the first CI deploy — the initial build will just error until they exist.
+
 ## Keeping it fresh
 
 - Live on every load, with a 2-minute edge cache; **↻ Refresh** forces a fresh pull.
-- Want auto-refresh in the tab? It's a one-line addition — ask and I'll add a timer.
+- **Auto-refreshes every 5 minutes** while the tab is open, and re-pulls immediately
+  when you switch back to the tab if the data is more than 2 minutes stale.
 - Want a custom domain (e.g. `dietty.yourdomain.com`)? Add a `route` in `wrangler.toml`.
 
 ## Adjusting the program
