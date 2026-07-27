@@ -42,6 +42,27 @@ button.btn:hover{ border-color:var(--axis); }
 #status{ font-size:13px; color:var(--muted); min-height:18px; margin:10px 0 4px; }
 #status.err{ color:var(--crit); }
 
+/* ── Today rings ─────────────────────────────────────────────── */
+.today h2 .note{ font-weight:400; }
+.today-rings{ display:flex; gap:28px; flex-wrap:wrap; align-items:center; margin-top:6px; }
+.ring-card{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+.ring-wrap{ position:relative; width:168px; height:168px; }
+.ring-wrap svg{ display:block; width:100%; height:100%; }
+.ring-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.ring-center .big{ font-size:27px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums; }
+.ring-center .of{ font-size:13px; color:var(--muted); margin-top:3px; font-variant-numeric:tabular-nums; }
+.ring-name{ font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+.ring-caption{ font-size:13px; font-weight:600; }
+.subs{ flex:1; min-width:260px; display:flex; flex-direction:column; justify-content:center; gap:16px; }
+.subrow{ display:grid; grid-template-columns:52px 1fr auto; gap:12px; align-items:center; font-size:13px; }
+.subrow .sn{ color:var(--ink2); font-weight:600; }
+.subbar{ height:11px; border-radius:6px; background:color-mix(in srgb,var(--muted) 22%,transparent); overflow:hidden; position:relative; }
+.subfill{ height:100%; border-radius:6px; }
+.subval{ color:var(--ink2); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.subval b{ color:var(--ink); font-weight:600; }
+.today-foot{ margin-top:16px; padding-top:14px; border-top:1px solid var(--border); font-size:13px; color:var(--ink2); display:flex; gap:22px; flex-wrap:wrap; }
+.today-foot b{ color:var(--ink); font-weight:600; }
+
 .kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin:14px 0 22px; }
 .card{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 16px 14px; }
 .card .label{ font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
@@ -163,6 +184,7 @@ function clientMain() {
     const targetIntake = rows.map(r => r.workoutCal!=null ? CFG.intakeBase + r.workoutCal : null);
     let cum=0; const cumDeficit = rows.map(r=>{ if(r.deficit!=null) cum+=r.deficit; return cum; });
 
+    renderToday(rows, DATA.food || []);
     renderKPIs(rows, wRoll, dRoll, pRoll);
 
     // Chart.js global look
@@ -269,6 +291,88 @@ function clientMain() {
   }
 
   function fmtLatest(rows,k,unit){ const v=lastVal(rows,k); return v==null?"—":(r1(v)+" "+unit); }
+
+  // ── Today: Apple-Watch-style rings ───────────────────────────────────────
+  function ringSVG(pctRaw, col, track){
+    const size=168, sw=16, r=(size-sw)/2, C=2*Math.PI*r;
+    const pct=Math.max(0, Math.min(pctRaw||0, 1));
+    const dash=C*pct;
+    return '<svg viewBox="0 0 '+size+' '+size+'">'
+      +'<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="'+track+'" stroke-width="'+sw+'"/>'
+      +'<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="'+sw+'" stroke-linecap="round" stroke-dasharray="'+dash+' '+(C-dash)+'" transform="rotate(-90 '+size/2+' '+size/2+')"/>'
+      +'</svg>';
+  }
+  function renderToday(daily, food){
+    const t=T();
+    const track = isDark() ? "rgba(255,255,255,.10)" : "rgba(0,0,0,.08)";
+    const dates=[...daily.map(d=>d.date), ...food.map(f=>f.date)].filter(Boolean).sort();
+    const day = dates[dates.length-1];
+    if(!day){ $("#today").innerHTML="<div class='sub' style='color:var(--muted)'>No data yet.</div>"; return; }
+
+    const dr = daily.find(d=>d.date===day) || {};
+    const ft = food.filter(f=>f.date===day);
+    let eaten=0,pg=0,cg=0,fg=0;
+    ft.forEach(f=>{ eaten+=f.calories||0; pg+=f.protein||0; cg+=f.carbs||0; fg+=f.fat||0; });
+    // fall back to the Daily Log's reconciled totals if no food rows for the day
+    if(!ft.length){ eaten=dr.eaten||0; pg=dr.protein||0; cg=dr.carbs||0; fg=dr.fat||0; }
+
+    const workout = dr.workoutCal||0;
+    const calTarget = CFG.intakeBase + workout;
+    const pTarget = CFG.proteinTarget;
+    const fTarget = CFG.fatTarget;
+    const cTarget = Math.max(0, (calTarget - pTarget*4 - fTarget*9)/4); // carbs fill remaining energy
+
+    // Calories ring — hitting target = planned deficit; over = eating into it
+    const calPct = calTarget>0 ? eaten/calTarget : 0;
+    const calLeft = calTarget - eaten;
+    const calCol = calPct>1.12 ? t.crit : (calPct>1.001 ? t.warn : t.orange);
+    const calCap = calLeft>=0
+      ? '<span style="color:var(--ink2)">'+r0(calLeft)+' kcal left</span>'
+      : '<span style="color:'+(calPct>1.12?"var(--crit)":"var(--warn)")+'">'+r0(-calLeft)+' kcal over</span>';
+
+    // Protein ring — a floor; green once hit
+    const pPct = pTarget>0 ? pg/pTarget : 0;
+    const pLeft = pTarget - pg;
+    const pCol = pPct>=1 ? t.good : t.blue;
+    const pCap = pLeft>0
+      ? '<span style="color:var(--ink2)">'+r0(pLeft)+' g to go</span>'
+      : '<span style="color:var(--good)">✓ hit'+(pLeft<0?" +"+r0(-pLeft)+"g":"")+'</span>';
+
+    const ring = (name, big, of, svg, cap)=>
+      '<div class="ring-card"><div class="ring-name">'+name+'</div>'
+      +'<div class="ring-wrap">'+svg+'<div class="ring-center"><div class="big">'+big+'</div><div class="of">'+of+'</div></div></div>'
+      +'<div class="ring-caption">'+cap+'</div></div>';
+
+    const subBar = (name, val, target, col, unit)=>{
+      const pct = target>0 ? val/target : 0;
+      const w = Math.max(0, Math.min(pct,1))*100;
+      const left = target-val;
+      return '<div class="subrow"><span class="sn">'+name+'</span>'
+        +'<div class="subbar"><div class="subfill" style="width:'+w+'%;background:'+col+'"></div></div>'
+        +'<span class="subval"><b>'+r0(val)+'</b> / '+r0(target)+' '+unit+' · '+(left>=0?r0(left)+" left":r0(-left)+" over")+'</span></div>';
+    };
+
+    const rings = '<div class="today-rings">'
+      + ring("Calories", r0(eaten), "/ "+r0(calTarget)+" kcal", ringSVG(calPct, calCol, track), calCap)
+      + ring("Protein", r0(pg), "/ "+r0(pTarget)+" g", ringSVG(pPct, pCol, track), pCap)
+      + '<div class="subs">'
+        + subBar("Carbs", cg, cTarget, t.aqua, "g")
+        + subBar("Fat", fg, fTarget, t.yellow, "g")
+        + '<div class="subval" style="font-size:12px;color:var(--muted)">Carb target scales with the day’s energy; fat is a floor.</div>'
+      + '</div>'
+      + '</div>';
+
+    const burned = dr.burned;
+    const defSoFar = burned!=null ? burned-eaten : (dr.deficit!=null?dr.deficit:null);
+    const foot = '<div class="today-foot">'
+      + '<span>Workout burn <b>'+(workout?r0(workout)+" kcal":"—")+'</b></span>'
+      + '<span>Deficit so far <b>'+(defSoFar==null?"—":r0(defSoFar)+" kcal")+'</b></span>'
+      + '<span>'+(ft.length?ft.length+" items logged":"from daily totals")+'</span>'
+      + '</div>';
+
+    $("#todayMeta").textContent = new Date(day+"T00:00:00").toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"}) + (dr.dayType?" · "+dr.dayType+" day":"");
+    $("#today").innerHTML = rings + foot;
+  }
 
   // ── KPI tiles ──────────────────────────────────────────────────────────
   function renderKPIs(rows, wRoll, dRoll, pRoll){
@@ -416,6 +520,11 @@ export function renderPage(cfg) {
     <button class="btn" id="refresh" title="Auto-refreshes every 5 min while open; click to force a fresh pull now">↻ Refresh</button>
   </header>
   <div id="status"></div>
+
+  <div class="panel today">
+    <h2>Today <span class="note" id="todayMeta"></span></h2>
+    <div id="today"></div>
+  </div>
 
   <div class="kpis" id="kpis"></div>
 

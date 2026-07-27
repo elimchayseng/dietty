@@ -14,6 +14,7 @@ FOOD_DB_ID  = "c3a2e3123c9f4ab2ad1610f3e287efc8"   # Food Log
 # These mirror the "Profile" + calibration rule on the Notion Food Tracker page.
 INTAKE_BASE          = "1575"        # dynamic target = INTAKE_BASE + workout calories
 PROTEIN_TARGET_G     = "145"
+FAT_TARGET_G         = "60"          # fat floor for the "Today" sub-target ring
 DEFICIT_TARGET       = "400"
 RHR_BASELINE         = "51"          # baseline resting HR (bpm), ~49-53
 HRV_BASELINE         = "82"          # baseline sleep HRV (ms)

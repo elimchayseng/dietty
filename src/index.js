@@ -18,6 +18,7 @@ function cfgFrom(env) {
   return {
     intakeBase: n(env.INTAKE_BASE, 1575),
     proteinTarget: n(env.PROTEIN_TARGET_G, 145),
+    fatTarget: n(env.FAT_TARGET_G, 60),
     deficitTarget: n(env.DEFICIT_TARGET, 400),
     rhrBaseline: n(env.RHR_BASELINE, 51),
     hrvBaseline: n(env.HRV_BASELINE, 82),
