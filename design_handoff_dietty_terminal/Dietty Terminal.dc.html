@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+  html,body{margin:0;padding:0;background:#060a07;}
+  body{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:500;color:#4fae76;-webkit-font-smoothing:antialiased;}
+  table th{font-weight:500;}
+  *{box-sizing:border-box;}
+  a{color:#7dfcb0;text-decoration:none;}
+  a:hover{color:#c8ffdd;text-decoration:underline;}
+  ::selection{background:#7dfcb0;color:#060a07;}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
+</helmet>
+
+<div style="min-height:100vh;background:#060a07;padding:0;">
+
+  <div style="display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid #1d3f2a;background:#0b120d;flex-wrap:wrap;">
+    <span style="font-family:'Share Tech Mono',monospace;font-size:17px;letter-spacing:.14em;color:#7dfcb0;">DIETTY</span>
+    <span style="font-size:11px;letter-spacing:.1em;color:#2c6b45;border:1px solid #1d3f2a;padding:2px 6px;">PERSONAL BIOMONITOR</span>
+    <span style="flex:1;"></span>
+    <span style="font-size:11px;letter-spacing:.06em;color:#2c6b45;">SYNC {{ syncedAt }}</span>
+    <button onClick="{{ refresh }}" style="font:inherit;font-size:11px;letter-spacing:.1em;color:#7dfcb0;background:#0b120d;border:1px solid #2c6b45;padding:5px 10px;cursor:pointer;" style-hover="background:#12211710;border-color:#7dfcb0;color:#c8ffdd;">&#8635; REFRESH</button>
+  </div>
+
+  <div style="display:flex;flex-direction:{{ shellDir }};align-items:stretch;">
+
+    <div style="display:flex;flex-direction:{{ railDir }};gap:2px;padding:10px;border-right:1px solid #1d3f2a;border-bottom:1px solid #1d3f2a;background:#080e0a;min-width:{{ railWidth }};flex-shrink:0;">
+      <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="4">
+        <button onClick="{{ tab.go }}" style="font:inherit;text-align:left;font-size:12px;letter-spacing:.14em;padding:10px 12px;cursor:pointer;border:1px solid {{ tab.border }};background:{{ tab.bg }};color:{{ tab.fg }};display:flex;align-items:center;gap:9px;white-space:nowrap;flex:{{ tab.flex }};" style-hover="border-color:#2c6b45;color:#c8ffdd;">
+          <span style="font-size:10px;">{{ tab.mark }}</span>
+          <span>{{ tab.name }}</span>
+        </button>
+      </sc-for>
+      <div style="flex:1;display:{{ railFootDisplay }};"></div>
+      <div style="font-size:10px;line-height:1.7;color:#3d8a5c;letter-spacing:.08em;padding:10px 12px;display:{{ railFootDisplay }};">
+        DAY {{ dayIndex }}<br/>
+        CAL WINDOW<br/>
+        {{ calibLabel }}
+      </div>
+    </div>
+
+    <div style="flex:1;min-width:0;padding:16px;">
+
+      <div style="display:{{ statDisplay }};flex-direction:column;gap:14px;">
+
+        <div style="border:1px solid #1d3f2a;background:#0b120d;">
+          <div style="display:flex;align-items:baseline;gap:10px;padding:9px 14px;border-bottom:1px solid #1d3f2a;background:#0e1a12;flex-wrap:wrap;">
+            <span style="font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:.16em;color:#7dfcb0;">&#9656; TODAY</span>
+            <span style="font-size:11px;letter-spacing:.06em;color:#2c6b45;">{{ todayMeta }}</span>
+          </div>
+
+          <div style="display:flex;flex-wrap:wrap;gap:24px;padding:20px 16px;align-items:center;justify-content:flex-start;">
+
+            <sc-if value="{{ isRings }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-wrap:wrap;gap:24px;flex:1 1 470px;justify-content:center;">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+                  <div style="font-size:10px;letter-spacing:.18em;color:#2c6b45;">CALORIES REMAINING</div>
+                  <div style="position:relative;width:214px;height:214px;">
+                    <svg viewBox="0 0 200 200" style="display:block;width:100%;height:100%;">
+                      <sc-for list="{{ calTicks }}" as="tk" hint-placeholder-count="48">
+                        <rect x="97" y="5" width="6" height="17" fill="{{ tk.c }}" transform="{{ tk.t }}"></rect>
+                      </sc-for>
+                    </svg>
+                    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                      <div style="font-size:46px;line-height:1;font-weight:700;color:{{ calBigColor }};font-variant-numeric:tabular-nums;">{{ calBig }}</div>
+                      <div style="font-size:11px;letter-spacing:.14em;color:#2c6b45;margin-top:7px;">{{ calBigUnit }}</div>
+                      <div style="font-size:11px;color:#4fae76;margin-top:9px;font-variant-numeric:tabular-nums;">{{ calEaten }} / {{ calTarget }}</div>
+                    </div>
+                  </div>
+                  <div style="font-size:11px;letter-spacing:.06em;color:{{ calCapColor }};">{{ calCap }}</div>
+                </div>
+
+                <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+                  <div style="font-size:10px;letter-spacing:.18em;color:#2c6b45;">PROTEIN REMAINING</div>
+                  <div style="position:relative;width:214px;height:214px;">
+                    <svg viewBox="0 0 200 200" style="display:block;width:100%;height:100%;">
+                      <sc-for list="{{ proTicks }}" as="tk" hint-placeholder-count="48">
+                        <rect x="97" y="5" width="6" height="17" fill="{{ tk.c }}" transform="{{ tk.t }}"></rect>
+                      </sc-for>
+                    </svg>
+                    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                      <div style="font-size:46px;line-height:1;font-weight:700;color:{{ proBigColor }};font-variant-numeric:tabular-nums;">{{ proBig }}</div>
+                      <div style="font-size:11px;letter-spacing:.14em;color:#2c6b45;margin-top:7px;">{{ proBigUnit }}</div>
+                      <div style="font-size:11px;color:#4fae76;margin-top:9px;font-variant-numeric:tabular-nums;">{{ proEaten }} / {{ proTarget }}</div>
+                    </div>
+                  </div>
+                  <div style="font-size:11px;letter-spacing:.06em;color:{{ proCapColor }};">{{ proCap }}</div>
+                </div>
+              </div>
+            </sc-if>
+
+            <div style="flex:1;min-width:250px;display:flex;flex-direction:column;gap:14px;">
+              <sc-for list="{{ macroBars }}" as="mb" hint-placeholder-count="4">
+                <div style="display:flex;flex-direction:column;gap:5px;">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
+                    <span style="font-size:11px;letter-spacing:.14em;color:{{ mb.nameColor }};">{{ mb.name }}</span>
+                    <span style="font-size:11px;color:#4fae76;font-variant-numeric:tabular-nums;"><b style="color:{{ mb.valColor }};font-weight:700;">{{ mb.val }}</b> / {{ mb.target }} {{ mb.unit }} &middot; {{ mb.left }}</span>
+                  </div>
+                  <div style="display:flex;gap:2px;height:{{ mb.h }};">
+                    <sc-for list="{{ mb.blocks }}" as="bk" hint-placeholder-count="30">
+                      <div style="flex:1;background:{{ bk.c }};"></div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="font-size:10px;line-height:1.6;color:#2c6b45;letter-spacing:.04em;">CARB TARGET SCALES WITH THE DAY'S ENERGY &middot; FAT IS A FLOOR</div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-wrap:wrap;gap:0;border-top:1px solid #1d3f2a;">
+            <sc-for list="{{ todayFoot }}" as="ft" hint-placeholder-count="4">
+              <div style="flex:1;min-width:130px;padding:10px 14px;border-right:1px solid #1d3f2a;">
+                <div style="font-size:9px;letter-spacing:.16em;color:#2c6b45;">{{ ft.label }}</div>
+                <div style="font-size:15px;color:{{ ft.color }};margin-top:4px;font-variant-numeric:tabular-nums;">{{ ft.val }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:10px;">
+          <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="7">
+            <div style="border:1px solid #1d3f2a;background:#0b120d;padding:12px 13px 11px;">
+              <div style="font-size:9px;letter-spacing:.16em;color:#2c6b45;">{{ k.label }}</div>
+              <div style="font-size:27px;line-height:1.05;margin-top:7px;color:{{ k.color }};font-variant-numeric:tabular-nums;">{{ k.val }}<span style="font-size:12px;color:#2c6b45;margin-left:4px;">{{ k.unit }}</span></div>
+              <div style="font-size:10px;line-height:1.5;margin-top:6px;color:{{ k.subColor }};letter-spacing:.03em;">{{ k.sub }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:{{ dietDisplay }};flex-direction:column;gap:14px;">
+        <div style="border:1px solid #1d3f2a;background:#0b120d;">
+          <div style="padding:9px 14px;border-bottom:1px solid #1d3f2a;background:#0e1a12;">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:.16em;color:#7dfcb0;">&#9656; ENERGY BALANCE</div>
+            <div style="font-size:10px;color:#2c6b45;margin-top:3px;letter-spacing:.04em;">BURNED (TDEE) VS EATEN &middot; THE SHADED GAP IS THE DEFICIT &middot; DASHED = TARGET INTAKE (1575 + WORKOUT CAL)</div>
+          </div>
+          <div style="padding:12px;height:300px;position:relative;"><canvas ref="{{ refEnergy }}"></canvas></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:#1d3f2a;border:1px solid #1d3f2a;">
+          <sc-for list="{{ defStats }}" as="s" hint-placeholder-count="4">
+            <div style="background:#0b120d;padding:12px 14px;">
+              <div style="font-size:9px;letter-spacing:.16em;color:#2c6b45;">{{ s.label }}</div>
+              <div style="font-size:25px;line-height:1.05;margin-top:6px;color:{{ s.color }};font-variant-numeric:tabular-nums;">{{ s.val }}<span style="font-size:11px;color:#2c6b45;margin-left:4px;">{{ s.unit }}</span></div>
+              <div style="font-size:10px;margin-top:5px;color:{{ s.subColor }};letter-spacing:.04em;">{{ s.sub }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;">
+          <div style="border:1px solid #1d3f2a;background:#0b120d;">
+            <div style="padding:9px 14px;border-bottom:1px solid #1d3f2a;background:#0e1a12;">
+              <div style="font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:.16em;color:#7dfcb0;">&#9656; DAILY DEFICIT</div>
+              <div style="font-size:10px;color:#2c6b45;margin-top:3px;letter-spacing:.04em;">ZEROED ON THE 400 KCAL TARGET &middot; UP = AHEAD, DOWN = SHORT &middot; SOLID = 7-DAY AVG, DASHED = ALL-TIME AVG</div>
+            </div>
+            <div style="padding:12px;height:280px;position:relative;"><canvas ref="{{ refDeficit }}"></canvas></div>
+          </div>
+          <div style="border:1px solid #1d3f2a;background:#0b120d;">
+            <div style="padding:9px 14px;border-bottom:1px solid #1d3f2a;background:#0e1a12;">
+              <div style="font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:.16em;color:#7dfcb0;">&#9656; MACROS</div>
+              <div style="font-size:10px;color:#2c6b45;margin-top:3px;letter-spacing:.04em;">GRAMS PER DAY, STACKED &middot; DASHED = 145 G PROTEIN TARGET</div>
+            </div>
+            <div style="padding:12px;height:280px;position:relative;"><canvas ref="{{ refMacros }}"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:{{ trendsDisplay }};flex-direction:column;gap:14px;">
+        <div style="border:1px solid #1d3f2a;background:#0b120d;">
+          <div style="padding:9px 14px;border-bottom:1px solid #1d3f2a;background:#0e1a12;">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:.16em;color:#7dfcb0;">&#9656; MASS &amp; 7-DAY TREND</div>
+            <div style="font-size:10px;color:#2c6b45;margin-top:3px;letter-spacing:.04em;">RAW MORNING WEIGH-INS WITH 7-DAY ROLLING AVERAGE &middot; SHADED = CALIBRATION WINDOW</div>
+          </div>
+          <div style="padding:12px;height:320px;position:relative;"><canvas ref="{{ refWeight }}"></canvas></div>
+        </div>
+
+        <div style="border:1px solid #1d3f2a;background:#0b120d;">
+          <div style="padding:9px 14px;border-bottom:1px solid #1d3f2a;background:#0e1a12;">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:.16em;color:#7dfcb0;">&#9656; RECOVERY SIGNALS</div>
+            <div style="font-size:10px;color:#2c6b45;margin-top:3px;letter-spacing:.04em;">FROM COROS &middot; FLAG IF RHR SUSTAINED +5 OVER BASELINE OR HRV PARKED BELOW FLOOR</div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1px;background:#1d3f2a;">
+            <div style="background:#0b120d;padding:12px;">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-size:10px;letter-spacing:.16em;color:#2c6b45;">RESTING HR</span><span style="font-size:13px;color:#7dfcb0;font-variant-numeric:tabular-nums;">{{ rhrNow }}</span></div>
+              <div style="height:140px;position:relative;margin-top:8px;"><canvas ref="{{ refRhr }}"></canvas></div>
+            </div>
+            <div style="background:#0b120d;padding:12px;">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-size:10px;letter-spacing:.16em;color:#2c6b45;">SLEEP HRV</span><span style="font-size:13px;color:#7dfcb0;font-variant-numeric:tabular-nums;">{{ hrvNow }}</span></div>
+              <div style="height:140px;position:relative;margin-top:8px;"><canvas ref="{{ refHrv }}"></canvas></div>
+            </div>
+            <div style="background:#0b120d;padding:12px;">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-size:10px;letter-spacing:.16em;color:#2c6b45;">SLEEP</span><span style="font-size:13px;color:#7dfcb0;font-variant-numeric:tabular-nums;">{{ sleepNow }}</span></div>
+              <div style="height:140px;position:relative;margin-top:8px;"><canvas ref="{{ refSleep }}"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #1d3f2a;background:#0b120d;">
+          <div style="padding:9px 14px;border-bottom:1px solid #1d3f2a;background:#0e1a12;">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:.16em;color:#7dfcb0;">&#9656; WEEKLY SUMMARY</div>
+            <div style="font-size:10px;color:#2c6b45;margin-top:3px;letter-spacing:.04em;">CALENDAR WEEKS, MON&ndash;SUN</div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1px;background:#1d3f2a;border-bottom:1px solid #1d3f2a;">
+            <sc-for list="{{ weekBarGroups }}" as="wg" hint-placeholder-count="2">
+              <div style="background:#0b120d;padding:13px 14px;">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
+                  <span style="font-size:10px;letter-spacing:.16em;color:#7dfcb0;">{{ wg.title }}</span>
+                  <span style="font-size:10px;letter-spacing:.08em;color:#2c6b45;">{{ wg.scaleNote }}</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:7px;">
+                  <sc-for list="{{ wg.rows }}" as="wr" hint-placeholder-count="7">
+                    <div style="display:grid;grid-template-columns:66px 1fr 70px;gap:9px;align-items:center;">
+                      <span style="font-size:10px;color:#2c6b45;letter-spacing:.06em;">{{ wr.label }}</span>
+                      <div style="display:flex;gap:2px;height:12px;">
+                        <sc-for list="{{ wr.blocks }}" as="bk" hint-placeholder-count="24">
+                          <div style="flex:1;background:{{ bk.c }};"></div>
+                        </sc-for>
+                      </div>
+                      <span style="font-size:11px;text-align:right;color:{{ wr.color }};font-variant-numeric:tabular-nums;">{{ wr.val }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:760px;">
+              <thead>
+                <tr>
+                  <sc-for list="{{ weekCols }}" as="c" hint-placeholder-count="11">
+                    <th style="text-align:{{ c.align }};padding:8px 10px;border-bottom:1px solid #1d3f2a;font-size:9px;font-weight:400;letter-spacing:.14em;color:#2c6b45;white-space:nowrap;">{{ c.name }}</th>
+                  </sc-for>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ weekRows }}" as="w" hint-placeholder-count="6">
+                  <tr>
+                    <sc-for list="{{ w.cells }}" as="cell" hint-placeholder-count="11">
+                      <td style="text-align:{{ cell.align }};padding:8px 10px;border-bottom:1px solid #12211a;color:{{ cell.color }};font-variant-numeric:tabular-nums;white-space:nowrap;">{{ cell.v }}</td>
+                    </sc-for>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:{{ logDisplay }};flex-direction:column;gap:14px;">
+        <div style="border:1px solid #1d3f2a;background:#0b120d;">
+          <div style="padding:9px 14px;border-bottom:1px solid #1d3f2a;background:#0e1a12;">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:.16em;color:#7dfcb0;">&#9656; INTAKE LOG</div>
+            <div style="font-size:10px;color:#2c6b45;margin-top:3px;letter-spacing:.04em;">{{ mealsHead }}</div>
+          </div>
+          <div style="padding:14px;display:flex;flex-direction:column;gap:22px;">
+            <sc-for list="{{ mealGroups }}" as="g" hint-placeholder-count="4">
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;gap:14px;flex-wrap:wrap;background:#0e1a12;border:1px solid #1d3f2a;padding:9px 12px;margin-bottom:6px;">
+                  <span style="font-family:'Share Tech Mono',monospace;font-size:17px;letter-spacing:.18em;color:#c8ffdd;">{{ g.name }}</span>
+                  <span style="font-size:16px;font-weight:700;letter-spacing:.04em;color:#7dfcb0;font-variant-numeric:tabular-nums;">{{ g.kcal }}<span style="font-size:10px;font-weight:500;color:#2c6b45;margin-left:4px;">KCAL</span><span style="color:#1d3f2a;margin:0 8px;">|</span>{{ g.prot }}<span style="font-size:10px;font-weight:500;color:#2c6b45;margin-left:4px;">G P</span></span>
+                </div>
+                <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="3">
+                  <div style="display:flex;justify-content:space-between;gap:12px;font-size:11px;padding:3px 0 3px 12px;">
+                    <span style="color:#4fae76;">{{ it.food }}</span>
+                    <span style="color:#2c6b45;font-variant-numeric:tabular-nums;white-space:nowrap;">{{ it.detail }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:18px;font-size:9px;letter-spacing:.16em;color:#2c6b45;text-align:center;">DIETTY &middot; LIVE FROM NOTION &middot; CLOUDFLARE WORKERS</div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;ringLayout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;rings&quot;,&quot;bars&quot;],&quot;default&quot;:&quot;rings&quot;,&quot;tsType&quot;:&quot;'rings' | 'bars'&quot;,&quot;section&quot;:&quot;Today panel&quot;},&quot;tickCount&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:24,&quot;max&quot;:72,&quot;step&quot;:4,&quot;default&quot;:44,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Today panel&quot;}}">
+const C = {
+  bg: "#060a07", panel: "#0b120d", head: "#0e1a12",
+  border: "#1d3f2a", dim: "#2c6b45", mid: "#4fae76",
+  bright: "#7dfcb0", hot: "#c8ffdd", warn: "#ffc24a", crit: "#ff6a4a",
+};
+const CFG = {
+  intakeBase: 1575, proteinTarget: 145, fatTarget: 60, deficitTarget: 400,
+  rhrBaseline: 51, hrvBaseline: 82, hrvFloor: 65, sleepTarget: 8,
+  calibStart: "2026-07-13", calibEnd: "2026-08-03",
+};
+
+function seeded(n) { let s = n; return () => { s = (s * 1103515245 + 12345) % 2147483648; return s / 2147483648; }; }
+
+function mockData() {
+  const rnd = seeded(90210);
+  const rows = [];
+  const end = new Date("2026-07-27T00:00:00");
+  const N = 46;
+  let w = 199.4;
+  for (let i = N - 1; i >= 0; i--) {
+    const d = new Date(end); d.setDate(d.getDate() - i);
+    const iso = d.toISOString().slice(0, 10);
+    const dow = d.getDay();
+    const dayType = dow === 0 ? "Long" : (dow === 2 || dow === 4 || dow === 6) ? "Training" : "Rest";
+    const workoutCal = dayType === "Long" ? 480 + Math.round(rnd() * 220) : dayType === "Training" ? 260 + Math.round(rnd() * 180) : Math.round(rnd() * 90);
+    const burned = 2210 + workoutCal + Math.round(rnd() * 120);
+    const eaten = 1520 + workoutCal * 0.75 + Math.round(rnd() * 420) - 60;
+    const protein = 108 + Math.round(rnd() * 62);
+    const fat = 48 + Math.round(rnd() * 34);
+    const carbs = Math.max(60, Math.round((eaten - protein * 4 - fat * 9) / 4));
+    w = w - 0.105 + (rnd() - 0.5) * 0.62;
+    rows.push({
+      date: iso, dayType, workoutCal, burned: Math.round(burned), eaten: Math.round(eaten),
+      deficit: Math.round(burned - eaten), protein, carbs, fat,
+      weight: i % 7 === 3 ? null : Math.round(w * 10) / 10,
+      rhr: 48 + Math.round(rnd() * 7), hrv: 62 + Math.round(rnd() * 31),
+      sleep: Math.round((6.1 + rnd() * 2.5) * 10) / 10,
+    });
+  }
+  const day = rows[rows.length - 1].date;
+  const food = [
+    { date: day, meal: "Breakfast", food: "Greek yogurt + berries", calories: 310, protein: 30, carbs: 32, fat: 6 },
+    { date: day, meal: "Breakfast", food: "Coffee, black", calories: 5, protein: 0, carbs: 1, fat: 0 },
+    { date: day, meal: "Lunch", food: "Chicken rice bowl", calories: 620, protein: 52, carbs: 68, fat: 14 },
+    { date: day, meal: "Snack", food: "Whey shake", calories: 160, protein: 30, carbs: 4, fat: 2 },
+    { date: day, meal: "Snack", food: "Apple", calories: 95, protein: 0, carbs: 25, fat: 0 },
+  ];
+  return { daily: rows, food, generatedAt: "2026-07-27T09:14:00Z" };
+}
+
+const r0 = (x) => (x == null || isNaN(x) ? null : Math.round(x));
+const r1 = (x) => (x == null || isNaN(x) ? null : Math.round(x * 10) / 10);
+const lastVal = (a, k) => { for (let i = a.length - 1; i >= 0; i--) if (a[i][k] != null) return a[i][k]; return null; };
+const fmtD = (iso) => new Date(iso + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+function rolling(rows, key, win) {
+  win = win || 7;
+  return rows.map((_, i) => { let s = 0, n = 0; for (let j = Math.max(0, i - win + 1); j <= i; j++) { const v = rows[j][key]; if (v != null) { s += v; n++; } } return n ? s / n : null; });
+}
+function slopePerWeek(rows) {
+  const pts = []; const t0 = new Date(rows[0].date + "T00:00:00").getTime();
+  for (const r of rows) if (r.weight != null) pts.push([(new Date(r.date + "T00:00:00").getTime() - t0) / 86400000, r.weight]);
+  if (pts.length < 2) return null;
+  const n = pts.length; let sx = 0, sy = 0, sxx = 0, sxy = 0;
+  for (const [x, y] of pts) { sx += x; sy += y; sxx += x * x; sxy += x * y; }
+  const d = n * sxx - sx * sx; if (!d) return null;
+  return ((n * sxy - sx * sy) / d) * 7;
+}
+function mondayOf(iso) { const d = new Date(iso + "T00:00:00"); const off = (d.getDay() + 6) % 7; d.setDate(d.getDate() - off); return d.toISOString().slice(0, 10); }
+
+class Component extends DCLogic {
+  state = { tab: "STAT", data: mockData(), w: typeof window !== "undefined" ? window.innerWidth : 1280 };
+
+  refs = {
+    weight: React.createRef(), energy: React.createRef(), deficit: React.createRef(),
+    macros: React.createRef(), rhr: React.createRef(), hrv: React.createRef(), sleep: React.createRef(),
+  };
+  charts = [];
+
+  componentDidMount() {
+    this.onResize = () => this.setState({ w: window.innerWidth });
+    window.addEventListener("resize", this.onResize);
+    this.waitChart();
+  }
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.onResize);
+    this.charts.forEach((c) => c.destroy());
+  }
+  componentDidUpdate() {
+    if (window.Chart && !this.charts.length) this.build();
+    else this.charts.forEach((c) => { try { c.resize(); } catch (e) {} });
+  }
+  waitChart() {
+    if (window.Chart) { this.build(); return; }
+    setTimeout(() => this.waitChart(), 120);
+  }
+
+  build() {
+    if (!window.Chart || !this.refs.weight.current) return;
+    this.charts.forEach((c) => c.destroy()); this.charts = [];
+    const rows = this.state.data.daily;
+    const labels = rows.map((r) => fmtD(r.date));
+    const Chart = window.Chart;
+    Chart.defaults.font.family = '"JetBrains Mono",ui-monospace,monospace';
+    Chart.defaults.font.size = 10;
+    Chart.defaults.font.weight = 500;
+    Chart.defaults.color = C.dim;
+    Chart.defaults.borderColor = C.border;
+
+    const gridX = { grid: { display: false }, border: { color: C.border }, ticks: { color: C.dim, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } };
+    const gridY = (title) => ({ grid: { color: "#12211a" }, border: { color: C.border }, ticks: { color: C.dim }, title: { display: !!title, text: title, color: C.dim } });
+    const base = (yTitle) => ({
+      responsive: true, maintainAspectRatio: false, animation: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: C.head, borderColor: C.dim, borderWidth: 1, titleColor: C.hot, bodyColor: C.mid, padding: 9, cornerRadius: 0, displayColors: false, titleFont: { family: '"JetBrains Mono",monospace' }, bodyFont: { family: '"JetBrains Mono",monospace' } },
+      },
+      scales: { x: gridX, y: gridY(yTitle) },
+    });
+    const leg = { display: true, labels: { usePointStyle: true, pointStyle: "rect", boxWidth: 8, boxHeight: 8, color: C.mid, font: { size: 10 } } };
+
+    const wRoll = rolling(rows, "weight", 7);
+    const dRoll = rolling(rows, "deficit", 7);
+    const targetIntake = rows.map((r) => (r.workoutCal != null ? CFG.intakeBase + r.workoutCal : null));
+
+    const idxStart = rows.findIndex((r) => r.date >= CFG.calibStart);
+    const idxEnd0 = rows.map((r) => r.date <= CFG.calibEnd).lastIndexOf(true);
+    const calibBox = idxStart >= 0 ? {
+      type: "box", xMin: Math.max(0, idxStart - 0.5), xMax: (idxEnd0 >= 0 ? idxEnd0 : rows.length - 1) + 0.5,
+      backgroundColor: "rgba(125,252,176,.07)", borderWidth: 0,
+      label: { display: true, content: "CALIBRATION WINDOW", position: { x: "start", y: "start" }, color: C.dim, font: { size: 9 }, backgroundColor: "transparent" },
+    } : null;
+
+    this.charts.push(new Chart(this.refs.weight.current, {
+      type: "line",
+      data: { labels, datasets: [
+        { label: "Weigh-in", data: rows.map((r) => r.weight), borderColor: C.dim, backgroundColor: C.dim, borderWidth: 1, pointRadius: 2.2, pointStyle: "rect", pointHoverRadius: 5, spanGaps: true, tension: 0 },
+        { label: "7-day avg", data: wRoll, borderColor: C.bright, backgroundColor: C.bright, borderWidth: 2, pointRadius: 0, spanGaps: true, tension: 0.25 },
+      ] },
+      options: { ...base("lb"), plugins: { ...base().plugins, legend: leg, annotation: { annotations: calibBox ? { calibBox } : {} } }, scales: { x: gridX, y: { ...gridY("lb"), grace: "6%" } } },
+    }));
+
+    this.charts.push(new Chart(this.refs.energy.current, {
+      type: "line",
+      data: { labels, datasets: [
+        { label: "Burned (TDEE)", data: rows.map((r) => r.burned), borderColor: C.bright, borderWidth: 1.5, pointRadius: 0, spanGaps: true, tension: 0.25, fill: "+1", backgroundColor: "rgba(125,252,176,.16)" },
+        { label: "Eaten", data: rows.map((r) => r.eaten), borderColor: "#2b7d52", borderWidth: 1.5, pointRadius: 0, spanGaps: true, tension: 0.25 },
+        { label: "Target intake", data: targetIntake, borderColor: C.warn, borderWidth: 1, borderDash: [5, 4], pointRadius: 0, spanGaps: true, tension: 0 },
+      ] },
+      options: { ...base("kcal"), plugins: { ...base().plugins, legend: leg, tooltip: { ...base().plugins.tooltip, callbacks: {
+        afterBody: (items) => { const i = items[0].dataIndex; const d = rows[i].deficit; return "\nDeficit  " + (d >= 0 ? "+" : "") + d + " kcal"; },
+      } } } },
+    }));
+
+    const TG = CFG.deficitTarget;
+    const defs = rows.map((r) => r.deficit).filter((v) => v != null);
+    const avgAll = defs.length ? defs.reduce((a, b) => a + b, 0) / defs.length : 0;
+    this.charts.push(new Chart(this.refs.deficit.current, {
+      type: "bar",
+      data: { labels, datasets: [
+        { label: "vs target", data: rows.map((r) => (r.deficit == null ? null : r.deficit - TG)), backgroundColor: rows.map((r) => (r.deficit == null ? C.dim : r.deficit >= TG ? C.bright : C.warn)), barPercentage: 0.9, categoryPercentage: 0.72 },
+        { label: "7-day avg", type: "line", data: dRoll.map((v) => (v == null ? null : v - TG)), borderColor: C.hot, borderWidth: 2, pointRadius: 0, spanGaps: true, tension: 0.25 },
+        { label: "All-time avg", type: "line", data: rows.map(() => avgAll - TG), borderColor: "#6fb98f", borderWidth: 1.5, borderDash: [6, 4], pointRadius: 0, tension: 0 },
+      ] },
+      options: { ...base("kcal"),
+        plugins: { ...base().plugins, legend: leg,
+          tooltip: { ...base().plugins.tooltip, callbacks: { label: (ctx) => ctx.dataset.label + "  " + (ctx.parsed.y >= 0 ? "+" : "") + Math.round(ctx.parsed.y) + " vs target · " + Math.round(ctx.parsed.y + TG) + " kcal" } },
+          annotation: { annotations: {
+            target: { type: "line", yMin: 0, yMax: 0, borderColor: C.mid, borderWidth: 1.5, label: { display: true, content: "TARGET " + TG, position: "end", color: C.mid, font: { size: 9 }, backgroundColor: "transparent" } },
+            surplus: { type: "line", yMin: -TG, yMax: -TG, borderColor: C.crit, borderWidth: 1, borderDash: [3, 4], label: { display: true, content: "BREAK EVEN", position: "start", color: C.crit, font: { size: 9 }, backgroundColor: "transparent" } },
+          } } },
+        scales: { x: gridX, y: { ...gridY("kcal vs target"), ticks: { color: C.dim, callback: (v) => (v > 0 ? "+" : "") + v } } } },
+    }));
+
+    this.charts.push(new Chart(this.refs.macros.current, {
+      type: "bar",
+      data: { labels, datasets: [
+        { label: "Protein", data: rows.map((r) => r.protein), backgroundColor: C.bright, stack: "m", barPercentage: 0.9, categoryPercentage: 0.7 },
+        { label: "Carbs", data: rows.map((r) => r.carbs), backgroundColor: "#2b7d52", stack: "m", barPercentage: 0.9, categoryPercentage: 0.7 },
+        { label: "Fat", data: rows.map((r) => r.fat), backgroundColor: "#154a30", stack: "m", barPercentage: 0.9, categoryPercentage: 0.7 },
+      ] },
+      options: { ...base("grams"), plugins: { ...base().plugins, legend: leg, annotation: { annotations: { pt: { type: "line", yMin: CFG.proteinTarget, yMax: CFG.proteinTarget, borderColor: C.warn, borderWidth: 1, borderDash: [4, 4], label: { display: true, content: "PROTEIN " + CFG.proteinTarget + "G", position: "start", color: C.warn, font: { size: 9 }, backgroundColor: "transparent" } } } } },
+        scales: { x: { ...gridX, stacked: true }, y: { ...gridY("grams"), stacked: true } } },
+    }));
+
+    const mini = (ref, key, color, refs) => {
+      const anno = {};
+      (refs || []).forEach((rf, i) => { anno["r" + i] = { type: "line", yMin: rf.v, yMax: rf.v, borderColor: rf.c, borderWidth: 1, borderDash: [4, 4], label: { display: true, content: rf.t, position: "start", color: rf.c, font: { size: 9 }, backgroundColor: "transparent" } }; });
+      this.charts.push(new Chart(ref.current, {
+        type: "line",
+        data: { labels, datasets: [{ data: rows.map((r) => r[key]), borderColor: color, backgroundColor: color, borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4, spanGaps: true, tension: 0.3 }] },
+        options: { ...base(), plugins: { ...base().plugins, legend: { display: false }, annotation: { annotations: anno } },
+          scales: { x: { display: false }, y: { ...gridY(), grace: "12%", ticks: { color: C.dim, maxTicksLimit: 4 } } } },
+      }));
+    };
+    mini(this.refs.rhr, "rhr", C.bright, [{ v: CFG.rhrBaseline, c: C.dim, t: "BASE " + CFG.rhrBaseline }]);
+    mini(this.refs.hrv, "hrv", C.bright, [{ v: CFG.hrvBaseline, c: C.dim, t: "BASE " + CFG.hrvBaseline }, { v: CFG.hrvFloor, c: C.crit, t: "FLOOR " + CFG.hrvFloor }]);
+    mini(this.refs.sleep, "sleep", C.bright, [{ v: CFG.sleepTarget, c: C.mid, t: "TARGET " + CFG.sleepTarget + "H" }]);
+  }
+
+  ticks(pct, color) {
+    const n = this.props.tickCount ?? 44;
+    const p = Math.max(0, Math.min(pct || 0, 1));
+    const filled = Math.round(p * n);
+    const step = 360 / n;
+    const out = [];
+    for (let i = 0; i < n; i++) out.push({ t: "rotate(" + (i * step).toFixed(2) + " 100 100)", c: i < filled ? color : "#16301f" });
+    return out;
+  }
+  blocks(pct, color, n) {
+    n = n || 28;
+    const p = Math.max(0, Math.min(pct || 0, 1));
+    const filled = Math.round(p * n);
+    const out = [];
+    for (let i = 0; i < n; i++) out.push({ c: i < filled ? color : "#16301f" });
+    return out;
+  }
+
+  blocksT(pct, targetPct, color, n) {
+    n = n || 24;
+    const filled = Math.round(Math.max(0, Math.min(pct || 0, 1)) * n);
+    const ti = Math.min(n - 1, Math.max(0, Math.round(targetPct * n) - 1));
+    const out = [];
+    for (let i = 0; i < n; i++) out.push({ c: i === ti ? "#ffc24a" : i < filled ? color : "#16301f" });
+    return out;
+  }
+
+  renderVals() {
+    const rows = this.state.data.daily;
+    const food = this.state.data.food;
+    const mobile = this.state.w < 760;
+    const layout = this.props.ringLayout ?? "rings";
+    const isRings = layout === "rings";
+
+    const day = rows[rows.length - 1].date;
+    const dr = rows[rows.length - 1];
+    const ft = food.filter((f) => f.date === day);
+    let eaten = 0, pg = 0, cg = 0, fg = 0;
+    ft.forEach((f) => { eaten += f.calories || 0; pg += f.protein || 0; cg += f.carbs || 0; fg += f.fat || 0; });
+    if (!ft.length) { eaten = dr.eaten || 0; pg = dr.protein || 0; cg = dr.carbs || 0; fg = dr.fat || 0; }
+
+    const workout = dr.workoutCal || 0;
+    const calTarget = CFG.intakeBase + workout;
+    const cTarget = Math.max(0, (calTarget - CFG.proteinTarget * 4 - CFG.fatTarget * 9) / 4);
+    const calPct = calTarget > 0 ? eaten / calTarget : 0;
+    const calLeft = calTarget - eaten;
+    const calColor = calPct > 1.12 ? C.crit : calPct > 1.001 ? C.warn : C.bright;
+    const pPct = pg / CFG.proteinTarget;
+    const pLeft = CFG.proteinTarget - pg;
+    const pColor = pPct >= 1 ? C.hot : C.bright;
+
+    const wRoll = rolling(rows, "weight", 7);
+    const dRoll = rolling(rows, "deficit", 7);
+    const pRoll = rolling(rows, "protein", 7);
+    const wNow = lastVal(rows, "weight");
+    const nn = wRoll.filter((v) => v != null);
+    const rollNow = nn[nn.length - 1];
+    const roll7ago = nn.length >= 8 ? nn[nn.length - 8] : nn[0];
+    const wkDelta = rollNow != null && roll7ago != null ? rollNow - roll7ago : null;
+    const calRows = rows.filter((r) => r.date >= CFG.calibStart);
+    const trend = slopePerWeek(calRows.length >= 2 ? calRows : rows);
+    const loss = trend == null ? null : -trend;
+    let trendColor = C.mid, trendNote = "—";
+    if (loss != null) {
+      if (loss < 0.4) { trendColor = C.warn; trendNote = "BELOW 0.4 LB/WK → CALIBRATION TRIGGER"; }
+      else if (loss > 1.2) { trendColor = C.warn; trendNote = "ABOVE 1.2 LB/WK → TOO AGGRESSIVE"; }
+      else { trendColor = C.bright; trendNote = "IN TARGET BAND 0.4–1.2 LB/WK"; }
+    }
+    const dAvg = dRoll.filter((v) => v != null).slice(-1)[0];
+    const impliedLoss = dAvg == null ? null : (dAvg * 7) / 3500;
+    const pAvg = pRoll.filter((v) => v != null).slice(-1)[0];
+    const pAvgPct = pAvg == null ? null : (pAvg / CFG.proteinTarget) * 100;
+    const rhr = lastVal(rows, "rhr"), hrv = lastVal(rows, "hrv");
+    const rhrD = rhr == null ? null : rhr - CFG.rhrBaseline;
+    const hrvD = hrv == null ? null : hrv - CFG.hrvBaseline;
+    const sleepAvg = rolling(rows, "sleep", 7).filter((v) => v != null).slice(-1)[0];
+    const cumDef = rows.reduce((s, r) => s + (r.deficit || 0), 0);
+    const cumLb = cumDef / 3500;
+    const wFirst = rows.find((r) => r.weight != null);
+    const actualLb = wFirst && wNow != null ? wFirst.weight - wNow : null;
+
+    const arrow = (x) => (x == null ? "" : x > 0 ? "▲" : "▼");
+    const kpis = [
+      { label: "MASS", val: wNow == null ? "—" : r1(wNow), unit: "LB", color: C.hot,
+        sub: "7-DAY AVG " + (rollNow == null ? "—" : r1(rollNow) + " LB") + (wkDelta == null ? "" : " · " + arrow(wkDelta) + " " + Math.abs(r1(wkDelta)) + " LB/WK"), subColor: C.dim },
+      { label: "TREND", val: loss == null ? "—" : (loss >= 0 ? "−" : "+") + Math.abs(r1(Math.abs(loss))), unit: "LB/WK", color: trendColor, sub: trendNote, subColor: trendColor },
+      { label: "TOTAL LOST", val: actualLb == null ? "—" : (actualLb >= 0 ? "−" : "+") + Math.abs(r1(actualLb)), unit: "LB", color: C.hot,
+        sub: "CUM. DEFICIT " + r0(cumDef).toLocaleString() + " KCAL ≈ −" + r1(cumLb) + " LB PREDICTED", subColor: C.dim },
+      { label: "DEFICIT 7-DAY", val: dAvg == null ? "—" : r0(dAvg), unit: "KCAL", color: dAvg >= CFG.deficitTarget ? C.bright : C.warn,
+        sub: impliedLoss == null ? "—" : "≈ " + r1(impliedLoss) + " LB/WK PREDICTED · TARGET " + CFG.deficitTarget, subColor: C.dim },
+      { label: "PROTEIN 7-DAY", val: pAvg == null ? "—" : r0(pAvg), unit: "G", color: pAvgPct >= 97 ? C.bright : pAvgPct >= 85 ? C.warn : C.crit,
+        sub: pAvgPct == null ? "—" : r0(pAvgPct) + "% OF " + CFG.proteinTarget + "G TARGET", subColor: pAvgPct >= 97 ? C.bright : C.warn },
+      { label: "RESTING HR", val: rhr == null ? "—" : r0(rhr), unit: "BPM", color: rhrD >= 5 ? C.crit : C.hot,
+        sub: rhrD == null ? "—" : rhrD >= 5 ? "+" + r0(rhrD) + " VS BASE — RECOVERY FLAG" : (rhrD >= 0 ? "+" : "") + r0(rhrD) + " VS BASE " + CFG.rhrBaseline, subColor: rhrD >= 5 ? C.crit : C.dim },
+      { label: "SLEEP HRV", val: hrv == null ? "—" : r0(hrv), unit: "MS", color: hrv < CFG.hrvFloor ? C.crit : C.hot,
+        sub: (hrv < CFG.hrvFloor ? "BELOW " + CFG.hrvFloor + " FLOOR" : (hrvD >= 0 ? "+" : "") + r0(hrvD) + " VS BASE " + CFG.hrvBaseline) + (sleepAvg == null ? "" : " · " + r1(sleepAvg) + "H SLEEP"), subColor: hrv < CFG.hrvFloor ? C.crit : C.dim },
+    ];
+
+    const barDef = (name, val, target, unit, color, big) => ({
+      name, unit, val: r0(val), target: r0(target), h: big ? "16px" : "11px",
+      nameColor: big ? C.bright : C.mid, valColor: big ? C.hot : C.bright,
+      left: target - val >= 0 ? r0(target - val) + " LEFT" : r0(val - target) + " OVER",
+      blocks: this.blocks(target > 0 ? val / target : 0, color, big ? 34 : 28),
+    });
+    const macroBars = isRings
+      ? [barDef("CARBS", cg, cTarget, "G", "#2b7d52"), barDef("FAT", fg, CFG.fatTarget, "G", "#1f5c3c")]
+      : [barDef("CALORIES", eaten, calTarget, "KCAL", calColor, true), barDef("PROTEIN", pg, CFG.proteinTarget, "G", pColor, true),
+         barDef("CARBS", cg, cTarget, "G", "#2b7d52"), barDef("FAT", fg, CFG.fatTarget, "G", "#1f5c3c")];
+
+    const defSoFar = dr.burned != null ? dr.burned - eaten : dr.deficit;
+    const todayFoot = [
+      { label: "WORKOUT BURN", val: workout ? r0(workout) + " KCAL" : "—", color: C.hot },
+      { label: "DEFICIT SO FAR", val: defSoFar == null ? "—" : r0(defSoFar) + " KCAL", color: defSoFar >= CFG.deficitTarget ? C.bright : C.warn },
+      { label: "DAY TYPE", val: (dr.dayType || "—").toUpperCase(), color: C.hot },
+      { label: "ITEMS LOGGED", val: ft.length ? String(ft.length) : "FROM DAILY TOTALS", color: C.hot },
+    ];
+
+    const weekCols = ["WEEK", "DAYS", "AVG WT", "Δ WT", "AVG KCAL IN", "AVG DEF", "TOT DEF", "EST Δ", "AVG PROTEIN", "TRAIN", "AVG SLEEP"]
+      .map((name, i) => ({ name, align: i === 0 ? "left" : "right" }));
+    const groups = {};
+    for (const r of rows) { const k = mondayOf(r.date); (groups[k] = groups[k] || []).push(r); }
+    const avg = (a, k) => { let s = 0, n = 0; for (const r of a) if (r[k] != null) { s += r[k]; n++; } return n ? s / n : null; };
+    const sum = (a, k) => { let s = 0, n = 0; for (const r of a) if (r[k] != null) { s += r[k]; n++; } return n ? s : null; };
+    let prevW = null; const weekRows = []; const weekAgg = [];
+    for (const k of Object.keys(groups).sort()) {
+      const g = groups[k]; const e = new Date(k + "T00:00:00"); e.setDate(e.getDate() + 6);
+      const range = fmtD(k) + "–" + e.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const w = avg(g, "weight"); const dW = w != null && prevW != null ? w - prevW : null; if (w != null) prevW = w;
+      const totDef = sum(g, "deficit"); const estLb = totDef == null ? null : totDef / 3500;
+      const train = g.filter((r) => r.dayType === "Training" || r.dayType === "Long").length;
+      const pa = avg(g, "protein");
+      const cell = (v, align, color) => ({ v: v == null ? "—" : v, align: align || "right", color: color || C.mid });
+      weekRows.push({ cells: [
+        cell(range.toUpperCase(), "left", C.bright), cell(g.length), cell(r1(w)),
+        cell(dW == null ? null : (dW < 0 ? "−" : "+") + Math.abs(r1(dW)), "right", dW == null ? C.mid : dW < 0 ? C.bright : C.warn),
+        cell(r0(avg(g, "eaten"))),
+        cell(r0(avg(g, "deficit")), "right", avg(g, "deficit") >= CFG.deficitTarget ? C.hot : C.warn),
+        cell(r0(totDef)),
+        cell(estLb == null ? null : "−" + r1(estLb) + " LB", "right", C.bright),
+        cell(pa == null ? null : r0(pa) + "G", "right", pa >= CFG.proteinTarget ? C.hot : C.warn), cell(train), cell(avg(g, "sleep") == null ? null : r1(avg(g, "sleep")) + "H"),
+      ] });
+      weekAgg.push({ label: fmtD(k).toUpperCase(), def: avg(g, "deficit"), pro: pa });
+    }
+    weekRows.reverse();
+
+    const defScale = Math.max(700, ...weekAgg.map((x) => x.def || 0));
+    const proScale = Math.max(CFG.proteinTarget * 1.25, ...weekAgg.map((x) => x.pro || 0));
+    const weekBarGroups = [
+      { title: "AVG DEFICIT / WEEK", scaleNote: "NOTCH = " + CFG.deficitTarget + " KCAL TARGET",
+        rows: weekAgg.map((x) => ({ label: x.label, val: x.def == null ? "—" : r0(x.def) + " KCAL",
+          color: x.def >= CFG.deficitTarget ? C.hot : C.warn,
+          blocks: this.blocksT((x.def || 0) / defScale, CFG.deficitTarget / defScale, x.def >= CFG.deficitTarget ? C.bright : "#2b7d52") })) },
+      { title: "AVG PROTEIN / WEEK", scaleNote: "NOTCH = " + CFG.proteinTarget + " G TARGET",
+        rows: weekAgg.map((x) => ({ label: x.label, val: x.pro == null ? "—" : r0(x.pro) + " G",
+          color: x.pro >= CFG.proteinTarget ? C.hot : C.warn,
+          blocks: this.blocksT((x.pro || 0) / proScale, CFG.proteinTarget / proScale, x.pro >= CFG.proteinTarget ? C.bright : "#2b7d52") })) },
+    ];
+
+    const allDefs = rows.map((r) => r.deficit).filter((v) => v != null);
+    const avgAll = allDefs.length ? allDefs.reduce((a, b) => a + b, 0) / allDefs.length : null;
+    const dDelta = dAvg != null && avgAll != null ? dAvg - avgAll : null;
+    const defStats = [
+      { label: "7-DAY AVG DEFICIT", val: dAvg == null ? "—" : r0(dAvg), unit: "KCAL", color: dAvg >= CFG.deficitTarget ? C.bright : C.warn,
+        sub: dAvg == null ? "—" : (dAvg - CFG.deficitTarget >= 0 ? "+" : "−") + Math.abs(r0(dAvg - CFG.deficitTarget)) + " VS 400 TARGET", subColor: dAvg >= CFG.deficitTarget ? C.bright : C.warn },
+      { label: "ALL-TIME AVG", val: avgAll == null ? "—" : r0(avgAll), unit: "KCAL", color: C.hot,
+        sub: "ACROSS " + allDefs.length + " LOGGED DAYS", subColor: C.dim },
+      { label: "7-DAY VS ALL-TIME", val: dDelta == null ? "—" : (dDelta >= 0 ? "+" : "−") + Math.abs(r0(dDelta)), unit: "KCAL", color: dDelta >= 0 ? C.bright : C.warn,
+        sub: dDelta == null ? "—" : dDelta >= 0 ? "RECENT WEEK RUNNING HARDER" : "RECENT WEEK RUNNING SOFTER", subColor: C.dim },
+      { label: "TOTAL DEFICIT", val: r0(rows.reduce((s, r) => s + (r.deficit || 0), 0)).toLocaleString(), unit: "KCAL", color: C.hot,
+        sub: "≈ −" + r1(rows.reduce((s, r) => s + (r.deficit || 0), 0) / 3500) + " LB PREDICTED", subColor: C.dim },
+    ];
+
+    const order = ["Breakfast", "Lunch", "Snack", "Dinner", "Smoothie", "Workout Fuel"];
+    const byMeal = {};
+    for (const f of ft) (byMeal[f.meal || "Other"] = byMeal[f.meal || "Other"] || []).push(f);
+    const mealGroups = [];
+    for (const m of order.concat(Object.keys(byMeal).filter((x) => !order.includes(x)))) {
+      const items = byMeal[m]; if (!items) continue;
+      let c = 0, p = 0;
+      const list = items.map((f) => { c += f.calories || 0; p += f.protein || 0; return { food: f.food, detail: r0(f.calories) + " KCAL · " + r0(f.protein || 0) + "G P" }; });
+      mealGroups.push({ name: m.toUpperCase(), kcal: r0(c).toLocaleString(), prot: r0(p), items: list });
+    }
+
+    const tabs = ["STAT", "DIET", "TRENDS", "LOG"].map((name, i) => {
+      const on = this.state.tab === name;
+      return { name, mark: on ? "◆" : "◇", bg: on ? "#153223" : "transparent", fg: on ? C.hot : C.dim,
+        border: on ? C.dim : "transparent", flex: mobile ? "1" : "0 0 auto", go: () => this.setState({ tab: name }) };
+    });
+
+    const g = new Date(this.state.data.generatedAt);
+    return {
+      tabs, isRings, macroBars, kpis, todayFoot, weekCols, weekRows, mealGroups, defStats, weekBarGroups,
+      shellDir: mobile ? "column" : "row",
+      railDir: mobile ? "row" : "column",
+      railWidth: mobile ? "0" : "168px",
+      railFootDisplay: mobile ? "none" : "block",
+      statDisplay: this.state.tab === "STAT" ? "flex" : "none",
+      dietDisplay: this.state.tab === "DIET" ? "flex" : "none",
+      trendsDisplay: this.state.tab === "TRENDS" ? "flex" : "none",
+      logDisplay: this.state.tab === "LOG" ? "flex" : "none",
+      syncedAt: g.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).toUpperCase(),
+      dayIndex: String(rows.length).padStart(3, "0"),
+      calibLabel: "07.13 – 08.03",
+      todayMeta: new Date(day + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }).toUpperCase() + (dr.dayType ? " · " + dr.dayType.toUpperCase() + " DAY" : ""),
+      calTicks: this.ticks(calLeft >= 0 ? calLeft / calTarget : 1, calColor),
+      proTicks: this.ticks(pPct, pColor),
+      calBig: Math.abs(r0(calLeft)), calBigUnit: calLeft >= 0 ? "KCAL LEFT" : "KCAL OVER", calBigColor: calColor,
+      calEaten: r0(eaten), calTarget: r0(calTarget),
+      calCap: calLeft >= 0 ? "ON BUDGET" : calPct > 1.12 ? "DEFICIT LOST" : "EATING INTO DEFICIT",
+      calCapColor: calLeft >= 0 ? C.mid : calColor,
+      proBig: Math.abs(r0(pLeft)), proBigUnit: pLeft > 0 ? "G TO GO" : "G OVER", proBigColor: pColor,
+      proEaten: r0(pg), proTarget: CFG.proteinTarget,
+      proCap: pLeft > 0 ? "FLOOR NOT MET" : "✓ FLOOR MET",
+      proCapColor: pLeft > 0 ? C.mid : C.hot,
+      rhrNow: rhr == null ? "—" : r0(rhr) + " BPM",
+      hrvNow: hrv == null ? "—" : r0(hrv) + " MS",
+      sleepNow: lastVal(rows, "sleep") == null ? "—" : r1(lastVal(rows, "sleep")) + " H",
+      mealsHead: "LATEST LOGGED DAY — " + fmtD(day).toUpperCase() + " · " + r0(ft.reduce((s, f) => s + (f.calories || 0), 0)) + " KCAL · " + r0(ft.reduce((s, f) => s + (f.protein || 0), 0)) + "G PROTEIN",
+      refWeight: this.refs.weight, refEnergy: this.refs.energy, refDeficit: this.refs.deficit,
+      refMacros: this.refs.macros, refRhr: this.refs.rhr, refHrv: this.refs.hrv, refSleep: this.refs.sleep,
+      refresh: () => this.forceUpdate(),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

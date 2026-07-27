@@ -7,7 +7,14 @@ const API = "https://api.notion.com/v1";
 
 // ─── typed property extractors ──────────────────────────────────────────────
 const num = (p) => (p && p.type === "number" ? p.number : null);
-const dateStart = (p) => (p && p.type === "date" && p.date ? p.date.start : null);
+// Calendar day (YYYY-MM-DD). Notion "Date" values may be plain dates OR datetimes
+// (an entry logged with a time of day). Downstream code groups/matches by calendar
+// day and compares dates as strings, so always normalize to the day here — the
+// date-portion prefix is the local day the entry was filed under.
+const dateStart = (p) => {
+  const s = p && p.type === "date" && p.date ? p.date.start : null;
+  return s ? s.slice(0, 10) : null;
+};
 const select = (p) => (p && p.type === "select" && p.select ? p.select.name : null);
 const title = (p) =>
   p && p.type === "title" ? p.title.map((t) => t.plain_text).join("") : "";
