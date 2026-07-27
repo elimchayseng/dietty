@@ -477,6 +477,10 @@ export function renderPage(cfg) {
 </div>
 <script>
 window.__CFG__ = ${JSON.stringify(cfg)};
+// esbuild's --keep-names wraps named functions with a __name() helper that
+// lives in module scope. Because we ship clientMain via .toString(), that
+// helper isn't present here — define a no-op so the serialized body runs.
+var __name = (fn) => fn;
 (${clientMain.toString()})();
 </script>
 </body>
