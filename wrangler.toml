@@ -12,7 +12,7 @@ FOOD_DB_ID  = "c3a2e3123c9f4ab2ad1610f3e287efc8"   # Food Log
 
 # ─── Profile / program constants (edit here, no code change needed) ─────────
 # These mirror the "Profile" + calibration rule on the Notion Food Tracker page.
-INTAKE_BASE          = "1575"        # dynamic target = INTAKE_BASE + workout calories
+INTAKE_BASE          = "1750"        # dynamic target = INTAKE_BASE + workout calories
 PROTEIN_TARGET_G     = "145"
 FAT_TARGET_G         = "60"          # fat floor for the "Today" sub-target ring
 DEFICIT_TARGET       = "400"

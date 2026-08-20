@@ -251,7 +251,7 @@ Seven tiles, in order:
 ### ▸ ENERGY BALANCE (reworked)
 
 Note line: `BURNED (TDEE) VS EATEN · THE SHADED GAP IS THE DEFICIT · DASHED = TARGET
-INTAKE (1575 + WORKOUT CAL)`. Height 300px.
+INTAKE (1750 + WORKOUT CAL)`. Height 300px.
 
 The paired-bars chart was illegible. Replace it with **two lines and a filled band**:
 

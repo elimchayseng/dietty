@@ -16,7 +16,7 @@ const CACHE_TTL = 120; // seconds of edge cache for the Notion pull
 function cfgFrom(env) {
   const n = (v, d) => (v == null || v === "" ? d : Number(v));
   return {
-    intakeBase: n(env.INTAKE_BASE, 1575),
+    intakeBase: n(env.INTAKE_BASE, 1750),
     proteinTarget: n(env.PROTEIN_TARGET_G, 145),
     fatTarget: n(env.FAT_TARGET_G, 60),
     deficitTarget: n(env.DEFICIT_TARGET, 400),
