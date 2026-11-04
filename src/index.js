@@ -1,17 +1,18 @@
 // Dietty — Cloudflare Worker.
 // Routes:
 //   GET /            → password gate, then the dashboard shell
-//   GET /api/data    → gated JSON of Daily Log + Food Log, edge-cached ~2 min
+//   GET /api/data    → gated JSON of Training OS Days + Food Log, edge-cached ~2 min
 //   POST /login      → sets auth cookie from the password form
 //   GET /logout      → clears the cookie
 //
 // Secrets:  NOTION_TOKEN, DASHBOARD_PASSWORD   (wrangler secret put …)
 
-import { fetchDailyLog, fetchFoodLog } from "./notion.js";
+import { fetchDays, fetchFoodLog, resolveFoodDates, mergeFoodTotals, trimDays } from "./notion.js";
 import { renderPage } from "./page.js";
 
 const COOKIE = "dietty_auth";
 const CACHE_TTL = 120; // seconds of edge cache for the Notion pull
+const FOOD_WINDOW_DAYS = 14; // live Food Log sums back-fill days not yet closed out
 
 function cfgFrom(env) {
   const n = (v, d) => (v == null || v === "" ? d : Number(v));
@@ -104,11 +105,17 @@ async function handleData(request, env, ctx) {
     });
   }
 
-  const [daily, food] = await Promise.all([
-    fetchDailyLog(env.NOTION_TOKEN, env.DAILY_DB_ID),
-    // only need recent food entries for the "latest day" panel
-    fetchFoodLog(env.NOTION_TOKEN, env.FOOD_DB_ID, isoDaysAgo(3)).catch(() => []),
+  const since = isoDaysAgo(FOOD_WINDOW_DAYS);
+  const [days, rawFood] = await Promise.all([
+    fetchDays(env.NOTION_TOKEN, env.DAYS_DB_ID),
+    // recent items only: the "today" panel, the meals list, and live totals for
+    // days whose closing totals haven't been written yet
+    fetchFoodLog(env.NOTION_TOKEN, env.FOOD_DB_ID, since).catch(() => []),
   ]);
+  const food = resolveFoodDates(rawFood, days, since);
+  // cap at UTC tomorrow so a local "today" ahead of UTC (e.g. Europe) isn't cut;
+  // empty pre-created future Days are trimmed off the end regardless
+  const daily = trimDays(mergeFoodTotals(days, food, since), isoDaysAgo(-1));
 
   const payload = JSON.stringify({ daily, food, generatedAt: new Date().toISOString() });
   const res = new Response(payload, {

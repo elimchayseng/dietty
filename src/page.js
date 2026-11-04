@@ -313,7 +313,7 @@ function clientMain() {
       const range=fmtD(k)+"–"+e.toLocaleDateString("en-US",{month:"short",day:"numeric"});
       const w=avg(g,"weight"); const dW=w!=null&&prevW!=null?w-prevW:null; if(w!=null) prevW=w;
       const totDef=sum(g,"deficit"); const estLb=totDef==null?null:totDef/3500;
-      const train=g.filter((r)=>r.dayType==="Training"||r.dayType==="Long").length;
+      const train=g.filter((r)=>r.sessions>0).length;
       const pa=avg(g,"protein");
       const cell=(v,align,color)=>({ v:v==null?"—":v, align:align||"right", color:color||C.mid });
       weekRows.push({ cells:[
