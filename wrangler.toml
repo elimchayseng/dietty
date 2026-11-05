@@ -4,14 +4,14 @@ compatibility_date = "2025-01-01"
 workers_dev = true
 
 # ─── Public (non-secret) config ────────────────────────────────────────────
-# Notion database IDs (from the Food Tracker page). Safe to keep in the repo —
+# Notion database IDs (from the Training OS page). Safe to keep in the repo —
 # they are useless without the NOTION_TOKEN secret and DB sharing.
 [vars]
-DAILY_DB_ID = "b9ced7d6e8fc40f99e09897f4e19c020"   # Ethan Daily Log - Energy & Weight
-FOOD_DB_ID  = "c3a2e3123c9f4ab2ad1610f3e287efc8"   # Food Log
+DAYS_DB_ID = "7975115ce9e841c3b4c1c52fb6ded9d7"   # Training OS → Days
+FOOD_DB_ID = "c3a2e3123c9f4ab2ad1610f3e287efc8"   # Training OS → Food Log
 
 # ─── Profile / program constants (edit here, no code change needed) ─────────
-# These mirror the "Profile" + calibration rule on the Notion Food Tracker page.
+# Program targets + calibration rule (originally from the Notion Food Tracker page).
 INTAKE_BASE          = "1750"        # dynamic target = INTAKE_BASE + workout calories
 PROTEIN_TARGET_G     = "145"
 FAT_TARGET_G         = "60"          # fat floor for the "Today" sub-target ring

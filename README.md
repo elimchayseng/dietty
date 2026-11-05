@@ -1,7 +1,7 @@
 # 🥗 Dietty
 
 A personal diet + health dashboard served from a **Cloudflare Worker**, pulling
-**live from Notion** (your Food Tracker's *Daily Log* and *Food Log* databases).
+**live from Notion** (the *Days* and *Food Log* databases under **Training OS**).
 Every page load re-reads Notion, so it stays current through the day as Coros
 pushes RHR/HRV/sleep/workout-calories and you log food.
 
@@ -24,7 +24,16 @@ Rolling 7-day lines live on the charts; calendar-week rollups live in the table.
 
 - One Worker (`src/index.js`) — router + password gate + edge cache.
 - `src/notion.js` — Notion REST calls (API version `2022-06-28`, classic
-  `/databases/{id}/query`, paginated).
+  `/databases/{id}/query`, paginated) against Training OS:
+  - **Days** — one row per local date: weight, Active/Burned kcal, closing diet
+    totals (Eaten kcal, Protein/Carbs/Fat g), Deficit, Day Type, RHR/HRV/Sleep,
+    Sessions. Charted from the first day with diet data (2026-07-12) to the latest
+    day with any data; empty pre-created future days are dropped.
+  - **Food Log** — last 14 days of items. Each item is attributed to the local day
+    via its **Day** relation (Food Log `Date` is UTC, so it isn't used for that).
+    Days without closing totals yet (today, or not closed out) fall back to the
+    live sum of their items, except days marked *Untracked*/*Partial*.
+  - Weekly **TRAIN** column counts days with at least one linked Session.
 - `src/page.js` — the dashboard HTML/CSS/JS (Chart.js + annotation plugin from CDN;
   colorblind-safe palette; light/dark themes).
 - Data is served at `GET /api/data` and **edge-cached ~2 minutes** to protect Notion
@@ -44,10 +53,10 @@ The Worker needs its own Notion access — the Claude connection can't be reused
 2. Name it `dietty`, pick your workspace (*nameless-consulting*), type **Internal**.
    Capabilities: **Read content** is enough.
 3. Click **Save**, then copy the **Internal Integration Secret** (starts with `ntn_`).
-4. **Share both databases with the integration.** Open the Notion **Food Tracker**
-   page → on each embedded database (**Ethan Daily Log - Energy & Weight** and
-   **Food Log**) click the **•••** menu → **Connections** → **Connect to** → `dietty`.
-   (Connecting the parent page usually cascades, but do both DBs to be safe.)
+4. **Share both databases with the integration.** Open the Notion **Training OS**
+   page → on each database (**Days** and **Food Log**) click the **•••** menu →
+   **Connections** → **Connect to** → `dietty`. (Connecting the Training OS page
+   usually cascades, but do both DBs to be safe.)
 
 > The database IDs are already in `wrangler.toml`. They're harmless without the token.
 
