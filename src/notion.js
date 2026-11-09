@@ -87,17 +87,25 @@ export async function fetchDays(token, dbId) {
     .filter((d) => d.date);
 }
 
-// Food Log — per-item entries since `sinceISO` (by UTC Date, which is never
-// earlier than the local day, so every item for a local day >= sinceISO is
-// included). Items carry their Day link; resolveFoodDates() turns that into the
-// local calendar day once the Days rows are in hand.
+// Food Log — per-item entries since `sinceISO`. Rows don't reliably fill every
+// date field (newer entries set only Local Date + the Day link, leaving Date
+// empty), so match on Date OR Local Date OR creation time — a filter on Date
+// alone silently drops those rows. Items carry their Day link; resolveFoodDates()
+// turns that into the local calendar day once the Days rows are in hand and
+// trims anything older than sinceISO.
 export async function fetchFoodLog(token, dbId, sinceISO) {
   const filter = sinceISO
-    ? { property: "Date", date: { on_or_after: sinceISO } }
+    ? {
+        or: [
+          { property: "Date", date: { on_or_after: sinceISO } },
+          { property: "Local Date", date: { on_or_after: sinceISO } },
+          { timestamp: "created_time", created_time: { on_or_after: sinceISO } },
+        ],
+      }
     : undefined;
   const results = await queryDatabase(token, dbId, {
     ...(filter ? { filter } : {}),
-    sorts: [{ property: "Date", direction: "ascending" }],
+    sorts: [{ timestamp: "created_time", direction: "ascending" }],
     page_size: 100,
   });
   return results.map((r) => {
