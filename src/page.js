@@ -72,7 +72,7 @@ body{
 .ring-big{ font-size:46px; line-height:1; font-weight:700; font-variant-numeric:tabular-nums; }
 .ring-unit{ font-size:11px; letter-spacing:.14em; color:var(--dim); margin-top:7px; white-space:nowrap; }
 .ring-of{ font-size:11px; color:var(--mid); margin-top:9px; font-variant-numeric:tabular-nums; }
-.ring-cap{ font-size:11px; letter-spacing:.06em; white-space:nowrap; }
+.ring-cap{ font-size:11px; letter-spacing:.06em; white-space:nowrap; text-align:center; line-height:1.6; }
 .macro-col{ flex:1; min-width:250px; display:flex; flex-direction:column; gap:14px; }
 .macro-row{ display:flex; flex-direction:column; gap:5px; }
 .macro-top{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
@@ -86,6 +86,7 @@ body{
 .foot-cell{ flex:1; min-width:130px; padding:10px 14px; border-right:1px solid var(--border); }
 .foot-cell .fl{ font-size:9px; letter-spacing:.16em; color:var(--dim); }
 .foot-cell .fv{ font-size:15px; margin-top:4px; font-variant-numeric:tabular-nums; }
+.foot-cell .fs{ font-size:9px; letter-spacing:.06em; color:var(--dim); margin-top:3px; }
 
 /* kpis */
 .kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(168px,1fr)); gap:10px; }
@@ -292,6 +293,14 @@ function clientMain() {
     const pPct = pg/tToday.protein;
     const pLeft = tToday.protein - pg;
     const pColor = pPct>=1 ? C.hot : C.bright;
+    // Net deficit for today: estimated TDEE (phase maintenance base + workout) − eaten.
+    // Computed here rather than from Notion's Burned kcal, which isn't reliably
+    // written with the maintenance base mid-day.
+    const maintBase = tToday.intakeBase + tToday.deficit;
+    const tdeeEst = maintBase + workout;
+    const netDef = tdeeEst - eaten;
+    const netColor = netDef>=tToday.deficit ? C.bright : netDef>=0 ? C.warn : C.crit;
+    const signed = (v)=> (v>=0?"+":"−")+Math.abs(r0(v));
 
     // scope-level targets: the selected phase's (as of its last day), or today's for ALL
     const ref = sel || cur;
@@ -361,10 +370,9 @@ function clientMain() {
     });
     const macroBars = [ barDef("CARBS",cg,cTarget,"G",FILL.carb), barDef("FAT",fg,CFG.fatTarget,"G",FILL.fat) ];
 
-    const defSoFar = dr.burned!=null ? dr.burned-eaten : dr.deficit;
     const todayFoot = [
-      { label:"WORKOUT BURN", val:workout?r0(workout)+" KCAL":"—", color:C.hot },
-      { label:"DEFICIT SO FAR", val:defSoFar==null?"—":r0(defSoFar)+" KCAL", color:defSoFar>=tToday.deficit?C.bright:C.warn },
+      { label:"EST. BURN (TDEE)", val:r0(tdeeEst)+" KCAL", color:C.hot, sub:maintBase+" BASE + "+r0(workout)+" WORKOUT" },
+      { label:"NET DEFICIT", val:signed(netDef)+" KCAL", color:netColor, sub:tToday.deficit>0?"TARGET +"+tToday.deficit+" · "+(netDef>=tToday.deficit?"ON TRACK":signed(netDef-tToday.deficit)+" VS TARGET"):"MAINTENANCE · TARGET 0" },
       { label:"DAY TYPE", val:(dr.dayType||"—").toUpperCase(), color:C.hot },
       { label:"ITEMS LOGGED", val:ft.length?String(ft.length):"FROM DAILY TOTALS", color:C.hot },
     ];
@@ -458,6 +466,7 @@ function clientMain() {
       calEaten: r0(eaten), calTarget: r0(calTarget),
       calCap: calLeft>=0?"ON BUDGET":calPct>1.12?(tToday.deficit>0?"DEFICIT LOST":"OVER MAINTENANCE"):(tToday.deficit>0?"EATING INTO DEFICIT":"ABOVE MAINTENANCE"),
       calCapColor: calLeft>=0?C.mid:calColor,
+      calNet: "NET DEFICIT "+signed(netDef)+" KCAL", calNetColor: netColor,
       proBig: Math.abs(r0(pLeft)), proBigUnit: pLeft>0?"G TO GO":"G OVER", proBigColor: pColor,
       proEaten: r0(pg), proTarget: tToday.protein,
       proCap: pLeft>0?"FLOOR NOT MET":"✓ FLOOR MET",
@@ -575,7 +584,7 @@ function clientMain() {
     el("todayMeta").textContent = V.todayMeta;
 
     const ringGroup = '<div class="ring-group">'
-      + ringCardHTML("CALORIES REMAINING", V.calTicks, V.calBig, V.calBigColor, V.calBigUnit, V.calEaten+" / "+V.calTarget, V.calCap, V.calCapColor)
+      + ringCardHTML("CALORIES REMAINING", V.calTicks, V.calBig, V.calBigColor, V.calBigUnit, V.calEaten+" / "+V.calTarget, V.calCap+'<br><span style="color:'+V.calNetColor+'">'+V.calNet+'</span>', V.calCapColor)
       + ringCardHTML("PROTEIN REMAINING", V.proTicks, V.proBig, V.proBigColor, V.proBigUnit, V.proEaten+" / "+V.proTarget, V.proCap, V.proCapColor)
       + '</div>';
     const macroCol = '<div class="macro-col">'+V.macroBars.map(macroRowHTML).join("")
@@ -583,7 +592,8 @@ function clientMain() {
     el("todayBody").innerHTML = ringGroup + macroCol;
 
     el("todayFoot").innerHTML = V.todayFoot.map((f)=>
-      '<div class="foot-cell"><div class="fl">'+f.label+'</div><div class="fv" style="color:'+f.color+'">'+f.val+'</div></div>').join("");
+      '<div class="foot-cell"><div class="fl">'+f.label+'</div><div class="fv" style="color:'+f.color+'">'+f.val+'</div>'
+      +(f.sub?'<div class="fs">'+f.sub+'</div>':'')+'</div>').join("");
 
     el("kpis").innerHTML = V.kpis.map((k)=>
       '<div class="kpi"><div class="kpi-label">'+k.label+'</div>'
