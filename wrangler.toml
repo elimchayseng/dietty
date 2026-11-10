@@ -12,16 +12,33 @@ FOOD_DB_ID = "c3a2e3123c9f4ab2ad1610f3e287efc8"   # Training OS → Food Log
 
 # ─── Profile / program constants (edit here, no code change needed) ─────────
 # Program targets + calibration rule (originally from the Notion Food Tracker page).
-INTAKE_BASE          = "1750"        # dynamic target = INTAKE_BASE + workout calories
-PROTEIN_TARGET_G     = "145"
 FAT_TARGET_G         = "60"          # fat floor for the "Today" sub-target ring
-DEFICIT_TARGET       = "400"
 RHR_BASELINE         = "51"          # baseline resting HR (bpm), ~49-53
 HRV_BASELINE         = "82"          # baseline sleep HRV (ms)
 HRV_FLOOR            = "65"          # parked below this 3+ days = under-fueling flag
 SLEEP_TARGET_H       = "8"
 CALIB_WINDOW_START   = "2026-07-13"  # calibration evaluation window
 CALIB_WINDOW_END     = "2026-08-03"
+
+# ─── Diet phases (hard-wired; the dashboard does NOT read Notion Blocks) ─────
+# Oldest first. Each day is judged against its own phase's targets:
+#   target intake = intakeBase + that day's workout calories
+#   deficit       = daily deficit target (0 = maintenance)
+# `changes` adjusts targets part-way through a phase. Leave `end` off the current
+# phase; when you start a new one, give the old one an end date and append.
+# Days outside every phase use maintenance defaults (base 2150, 145 g, 0).
+PHASES = '''
+[
+  { "id": "1", "name": "Deficit", "start": "2026-07-12", "end": "2026-09-16",
+    "intakeBase": 1575, "protein": 145, "deficit": 400,
+    "changes": [ { "from": "2026-08-17", "intakeBase": 1750 } ] },
+  { "id": "2", "name": "Maintenance / travel", "start": "2026-09-17", "end": "2026-11-08",
+    "intakeBase": 2150, "protein": 145, "deficit": 0,
+    "changes": [ { "from": "2026-11-02", "protein": 160 } ] },
+  { "id": "3", "name": "Deficit", "start": "2026-11-09",
+    "intakeBase": 1750, "protein": 145, "deficit": 400 }
+]
+'''
 
 # ─── Secrets (DO NOT put here) ──────────────────────────────────────────────
 # Set with:  npx wrangler secret put NOTION_TOKEN

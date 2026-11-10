@@ -14,13 +14,52 @@ const COOKIE = "dietty_auth";
 const CACHE_TTL = 120; // seconds of edge cache for the Notion pull
 const FOOD_WINDOW_DAYS = 14; // live Food Log sums back-fill days not yet closed out
 
+const num = (v, d) => (v == null || v === "" || isNaN(Number(v)) ? d : Number(v));
+
+// PHASES (wrangler.toml) — hard-wired diet phases, oldest first. Each:
+//   { id, name, start, end?, intakeBase, protein, deficit, changes?: [{ from, intakeBase?, protein?, deficit? }] }
+// `end` omitted = open-ended (the current phase). Days outside every phase fall
+// back to the INTAKE_BASE / PROTEIN_TARGET_G / DEFICIT_TARGET defaults.
+function parsePhases(raw, fallback) {
+  let list = raw;
+  if (typeof raw === "string") {
+    try { list = JSON.parse(raw); } catch (e) { list = []; }
+  }
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((p) => p && /^\d{4}-\d{2}-\d{2}$/.test(p.start))
+    .map((p) => ({
+      id: String(p.id),
+      name: String(p.name || "").toUpperCase(),
+      start: p.start,
+      end: p.end || null,
+      intakeBase: num(p.intakeBase, fallback.intakeBase),
+      protein: num(p.protein, fallback.proteinTarget),
+      deficit: num(p.deficit, fallback.deficitTarget),
+      changes: (Array.isArray(p.changes) ? p.changes : [])
+        .filter((c) => c && c.from)
+        .map((c) => ({
+          from: c.from,
+          intakeBase: c.intakeBase == null ? null : num(c.intakeBase, null),
+          protein: c.protein == null ? null : num(c.protein, null),
+          deficit: c.deficit == null ? null : num(c.deficit, null),
+        }))
+        .sort((a, b) => (a.from < b.from ? -1 : 1)),
+    }))
+    .sort((a, b) => (a.start < b.start ? -1 : 1));
+}
+
 function cfgFrom(env) {
-  const n = (v, d) => (v == null || v === "" ? d : Number(v));
-  return {
-    intakeBase: n(env.INTAKE_BASE, 1750),
+  const n = num;
+  const fallback = {
+    intakeBase: n(env.INTAKE_BASE, 2150),
     proteinTarget: n(env.PROTEIN_TARGET_G, 145),
+    deficitTarget: n(env.DEFICIT_TARGET, 0),
+  };
+  return {
+    ...fallback,
+    phases: parsePhases(env.PHASES, fallback),
     fatTarget: n(env.FAT_TARGET_G, 60),
-    deficitTarget: n(env.DEFICIT_TARGET, 400),
     rhrBaseline: n(env.RHR_BASELINE, 51),
     hrvBaseline: n(env.HRV_BASELINE, 82),
     hrvFloor: n(env.HRV_FLOOR, 65),
